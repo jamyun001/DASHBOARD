@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>게시판 UI 예제</title>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 10px;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    form input, form textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    form button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #0056b3;
+    }
+    .post {
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 12px 16px;
+      margin-bottom: 15px;
+    }
+    .post .post-header {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .post .post-content {
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+    }
+    .comments {
+      margin-left: 20px;
+      border-left: 3px solid #eee;
+      padding-left: 10px;
+    }
+    .comment {
+      margin-bottom: 8px;
+    }
+    .comment strong {
+      color: #555;
+    }
+    .comment-form {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>게시판 UI</h1>
+
+  <!-- 게시글 작성 폼 -->
+  <form id="postForm">
+    <input type="text" id="postNickname" placeholder="닉네임" required />
+    <input type="text" id="postTitle" placeholder="제목" required />
+    <textarea id="postContent" placeholder="내용" rows="4" required></textarea>
+    <button type="submit">글 올리기</button>
+  </form>
+
+  <!-- 게시글 목록 -->
+  <div id="postsContainer">
+    <!-- 게시글들이 여기서 렌더링됨 -->
+  </div>
+
+  <script>
+    const postForm = document.getElementById('postForm');
+    const postsContainer = document.getElementById('postsContainer');
+
+    // 임시 데이터 배열 (실제 DB 없으니 여기 저장)
+    const posts = [];
+
+    // 게시글 렌더링 함수
+    function renderPosts() {
+      postsContainer.innerHTML = '';
+      posts.forEach((post, index) => {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post';
+
+        // 게시글 헤더
+        const header = document.createElement('div');
+        header.className = 'post-header';
+        header.textContent = `${post.nickname} - ${post.title}`;
+
+        // 게시글 내용
+        const content = document.createElement('div');
+        content.className = 'post-content';
+        content.textContent = post.content;
+
+        // 댓글 영역
+        const commentsDiv = document.createElement('div');
+        commentsDiv.className = 'comments';
+
+        // 댓글 리스트
+        post.comments.forEach(comment => {
+          const commentDiv = document.createElement('div');
+          commentDiv.className = 'comment';
+          commentDiv.innerHTML = `<strong>${comment.nickname}</strong>: ${comment.content}`;
+          commentsDiv.appendChild(commentDiv);
+        });
+
+        // 댓글 작성 폼
+        const commentForm = document.createElement('form');
+        commentForm.className = 'comment-form';
+
+        const commentNickInput = document.createElement('input');
+        commentNickInput.type = 'text';
+        commentNickInput.placeholder = '닉네임';
+        commentNickInput.required = true;
+
+        const commentContentInput = document.createElement('input');
+        commentContentInput.type = 'text';
+        commentContentInput.placeholder = '댓글 내용';
+        commentContentInput.required = true;
+
+        const commentSubmit = document.createElement('button');
+        commentSubmit.type = 'submit';
+        commentSubmit.textContent = '댓글 달기';
+
+        commentForm.append(commentNickInput, commentContentInput, commentSubmit);
+
+        // 댓글 작성 이벤트
+        commentForm.addEventListener('submit', e => {
+          e.preventDefault();
+          const cNick = commentNickInput.value.trim();
+          const cContent = commentContentInput.value.trim();
+          if (!cNick || !cContent) return alert('닉네임과 댓글 내용을 입력하세요.');
+
+          // 댓글 저장
+          posts[index].comments.push({ nickname: cNick, content: cContent });
+          renderPosts();
+        });
+
+        postDiv.append(header, content, commentsDiv, commentForm);
+        postsContainer.appendChild(postDiv);
+      });
+    }
+
+    // 게시글 작성 이벤트
+    postForm.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const nickname = document.getElementById('postNickname').value.trim();
+      const title = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+
+      if (!nickname || !title || !content) return alert('모든 필드를 입력하세요.');
+
+      posts.unshift({
+        nickname,
+        title,
+        content,
+        comments: [],
+      });
+
+      renderPosts();
+      postForm.reset();
+    });
+
+    // 초기 렌더링
+    renderPosts();
+  </script>
+</body>
+</html>
