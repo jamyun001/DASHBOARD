@@ -3,190 +3,505 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>게시판 UI 예제</title>
+  <title>체르 평지생존 : 리바이브</title>
   <style>
+    :root {
+      --bg: #f9fbfd;
+      --card: #e8ecf1;
+      --hover: #d4dae3;
+      --text: #222;
+      --accent: #007aff;
+    }
+    body.dark {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --hover: #2a2a2a;
+      --text: #eee;
+      --accent: #00e1ff;
+    }
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: 'Noto Sans KR', sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      transition: background 0.3s, color 0.3s;
+      line-height: 1.4;
+    }
+    .container {
       max-width: 700px;
-      margin: 20px auto;
-      padding: 10px;
-      background: #f9f9f9;
+      margin: 0 auto;
+      padding: 1.2rem 1rem;
+      position: relative;
+      display: flex;
+      flex-direction: column;
     }
     h1 {
       text-align: center;
+      color: var(--accent);
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
     }
-    form {
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    form input, form textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 6px 0 12px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      resize: vertical;
-    }
-    form button {
-      background-color: #007bff;
-      color: white;
+    .theme-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
       border: none;
-      padding: 10px 16px;
-      font-size: 1rem;
-      border-radius: 4px;
+      font-size: 1.4rem;
       cursor: pointer;
+      color: var(--accent);
     }
-    form button:hover {
-      background-color: #0056b3;
+    .notice-item {
+      background: var(--card);
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      margin-bottom: 0.6rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
     }
-    .post {
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      padding: 12px 16px;
-      margin-bottom: 15px;
+    .notice-item:hover {
+      background: var(--hover);
+      transform: scale(1.02);
     }
-    .post .post-header {
-      font-weight: bold;
-      margin-bottom: 6px;
+    .notice-title {
+      font-weight: 600;
     }
-    .post .post-content {
-      margin-bottom: 12px;
+    .notice-preview {
+      font-size: 0.9rem;
+      color: gray;
+      margin-top: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #detail-view {
+      display: none;
+      animation: fadeIn 0.3s ease;
+      flex-direction: column;
+    }
+    .back-button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 1rem;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      padding: 0;
+      align-self: flex-start;
+    }
+    #notice-body {
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-bottom: 2rem;
       white-space: pre-wrap;
     }
-    .comments {
-      margin-left: 20px;
-      border-left: 3px solid #eee;
-      padding-left: 10px;
+    #comments-section {
+      margin-top: 2rem;
+      border-top: 2px solid var(--accent);
+      padding-top: 1rem;
     }
-    .comment {
-      margin-bottom: 8px;
+    #nickname-input,
+    #comment-input {
+      width: 100%;
+      padding: 0.6rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--accent);
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 1rem;
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
     }
-    .comment strong {
-      color: #555;
+    #nickname-input {
+      margin-bottom: 0.6rem;
     }
-    .comment-form {
-      margin-top: 10px;
+    #nickname-input:focus,
+    #comment-input:focus {
+      outline: none;
+      border-color: #005fcc;
+      box-shadow: 0 0 6px #005fccaa;
+    }
+    #submit-comment {
+      margin-top: 0.6rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      transition: background-color 0.3s;
+    }
+    #submit-comment:hover {
+      background: #005fcc;
+    }
+    #comments-list {
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid var(--accent);
+      padding: 0.8rem;
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+      margin-top: 1rem;
+    }
+    .comment-item {
+      border-bottom: 1px solid #ddd;
+      padding: 0.6rem 0;
+      border-radius: 8px;
+      position: relative;
+    }
+    .comment-item:last-child {
+      border-bottom: none;
+    }
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.95rem;
+    }
+    .comment-date {
+      color: gray;
+      font-style: italic;
+      font-weight: normal;
+      font-size: 0.85rem;
+    }
+    .comment-text {
+      margin: 0.3rem 0 0 0;
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+    }
+    .reply-button {
+      font-size: 0.85rem;
+      color: var(--accent);
+      cursor: pointer;
+      user-select: none;
+      position: absolute;
+      right: 0;
+      top: 0.6rem;
+      background: none;
+      border: none;
+    }
+    .replies {
+      margin-left: 1.5rem;
+      margin-top: 0.5rem;
+    }
+    .reply-form {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .reply-form textarea {
+      width: 100%;
+      padding: 0.4rem;
+      border-radius: 6px;
+      border: 1.2px solid var(--accent);
+      resize: vertical;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
+    }
+    .reply-form button {
+      align-self: flex-end;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.3rem 0.8rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .reply-form button:hover {
+      background: #005fcc;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>게시판 UI</h1>
+  <div class="container">
+    <button class="theme-toggle">🌙</button>
+    <h1>📢 공지사항</h1>
+    <div id="list-view"></div>
 
-  <!-- 게시글 작성 폼 -->
-  <form id="postForm">
-    <input type="text" id="postNickname" placeholder="닉네임" required />
-    <input type="text" id="postTitle" placeholder="제목" required />
-    <textarea id="postContent" placeholder="내용" rows="4" required></textarea>
-    <button type="submit">글 올리기</button>
-  </form>
+    <div id="detail-view">
+      <button class="back-button" onclick="goBack()">← 목록으로</button>
+      <div id="notice-body"></div>
 
-  <!-- 게시글 목록 -->
-  <div id="postsContainer">
-    <!-- 게시글들이 여기서 렌더링됨 -->
+      <div id="comments-section">
+        <h3>댓글</h3>
+        <input id="nickname-input" type="text" placeholder="닉네임을 입력하세요 (최대 20자)" maxlength="20" />
+        <textarea id="comment-input" rows="3" placeholder="댓글을 입력하세요..."></textarea>
+        <button id="submit-comment">댓글 등록</button>
+        <div id="comments-list">댓글 로딩 중...</div>
+      </div>
+    </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <script>
-    const postForm = document.getElementById('postForm');
-    const postsContainer = document.getElementById('postsContainer');
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPVJcXblj0MzeSWhJomvl8xczyp2Unp6w",
+      authDomain: "chating-382e3.firebaseapp.com",
+      projectId: "chating-382e3",
+      storageBucket: "chating-382e3.appspot.com",
+      messagingSenderId: "690140086247",
+      appId: "1:690140086247:web:4635c4c0315f465c110742",
+      measurementId: "G-SD2QM11LHC"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // 임시 데이터 배열 (실제 DB 없으니 여기 저장)
-    const posts = [];
+    const mdList = ["V1.0.md", "V1.0.1.md", "V1.1.md", "V2.0.md"];
 
-    // 게시글 렌더링 함수
-    function renderPosts() {
-      postsContainer.innerHTML = '';
-      posts.forEach((post, index) => {
-        const postDiv = document.createElement('div');
-        postDiv.className = 'post';
+    const listView = document.getElementById('list-view');
+    const detailView = document.getElementById('detail-view');
+    const noticeBody = document.getElementById('notice-body');
 
-        // 게시글 헤더
-        const header = document.createElement('div');
-        header.className = 'post-header';
-        header.textContent = `${post.nickname} - ${post.title}`;
+    let currentNoticeId = null;
 
-        // 게시글 내용
-        const content = document.createElement('div');
-        content.className = 'post-content';
-        content.textContent = post.content;
-
-        // 댓글 영역
-        const commentsDiv = document.createElement('div');
-        commentsDiv.className = 'comments';
-
-        // 댓글 리스트
-        post.comments.forEach(comment => {
-          const commentDiv = document.createElement('div');
-          commentDiv.className = 'comment';
-          commentDiv.innerHTML = `<strong>${comment.nickname}</strong>: ${comment.content}`;
-          commentsDiv.appendChild(commentDiv);
-        });
-
-        // 댓글 작성 폼
-        const commentForm = document.createElement('form');
-        commentForm.className = 'comment-form';
-
-        const commentNickInput = document.createElement('input');
-        commentNickInput.type = 'text';
-        commentNickInput.placeholder = '닉네임';
-        commentNickInput.required = true;
-
-        const commentContentInput = document.createElement('input');
-        commentContentInput.type = 'text';
-        commentContentInput.placeholder = '댓글 내용';
-        commentContentInput.required = true;
-
-        const commentSubmit = document.createElement('button');
-        commentSubmit.type = 'submit';
-        commentSubmit.textContent = '댓글 달기';
-
-        commentForm.append(commentNickInput, commentContentInput, commentSubmit);
-
-        // 댓글 작성 이벤트
-        commentForm.addEventListener('submit', e => {
-          e.preventDefault();
-          const cNick = commentNickInput.value.trim();
-          const cContent = commentContentInput.value.trim();
-          if (!cNick || !cContent) return alert('닉네임과 댓글 내용을 입력하세요.');
-
-          // 댓글 저장
-          posts[index].comments.push({ nickname: cNick, content: cContent });
-          renderPosts();
-        });
-
-        postDiv.append(header, content, commentsDiv, commentForm);
-        postsContainer.appendChild(postDiv);
-      });
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
     }
 
-    // 게시글 작성 이벤트
-    postForm.addEventListener('submit', e => {
-      e.preventDefault();
+    function markdownToHtml(md) {
+      if (!md) return '';
+      md = md.replace(/\n{3,}/g, '\n\n');
+      md = md
+        .replace(/^# (.*)$/gm, '<h2>$1</h2>')
+        .replace(/^## (.*)$/gm, '<h3>$1</h3>')
+        .replace(/^- (.*)$/gm, '<li>$1</li>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+      return md.replace(/<p><\/p>/g, '');
+    }
 
-      const nickname = document.getElementById('postNickname').value.trim();
-      const title = document.getElementById('postTitle').value.trim();
-      const content = document.getElementById('postContent').value.trim();
+    async function renderNoticeList() {
+      listView.innerHTML = '';
+      const promises = mdList.map(filename => fetch(`updates/${filename}`).then(r => r.text()));
+      const texts = await Promise.all(promises);
+      for(let i = mdList.length - 1; i >= 0; i--) {
+        const filename = mdList[i];
+        const text = texts[i];
+        const title = filename.replace(".md","");
+        const preview = text.split('\n').find(l => l.trim().length > 0) || '';
+        const shortPreview = preview.length > 60 ? preview.slice(0, 60) + '...' : preview;
 
-      if (!nickname || !title || !content) return alert('모든 필드를 입력하세요.');
+        const div = document.createElement('div');
+        div.className = 'notice-item';
+        div.innerHTML = `<div class="notice-title">✅ ${escapeHtml(title)}</div><div class="notice-preview">${escapeHtml(shortPreview)}</div>`;
+        div.onclick = () => loadNotice(filename);
+        listView.appendChild(div);
+      }
+    }
 
-      posts.unshift({
-        nickname,
-        title,
-        content,
-        comments: [],
-      });
+    const commentsList = document.getElementById('comments-list');
+    const commentInput = document.getElementById('comment-input');
+    const nicknameInput = document.getElementById('nickname-input');
+    const submitCommentBtn = document.getElementById('submit-comment');
 
-      renderPosts();
-      postForm.reset();
-    });
+    function scrollCommentsToBottom() {
+      commentsList.scrollTop = commentsList.scrollHeight;
+    }
 
-    // 초기 렌더링
-    renderPosts();
+    async function loadComments(noticeId) {
+      commentsList.innerHTML = '댓글 로딩 중...';
+
+      try {
+        const snapshot = await db.collection('comments').doc(noticeId).collection('comments')
+          .orderBy('createdAt', 'asc')
+          .get();
+
+        if (snapshot.empty) {
+          commentsList.innerHTML = '<p>댓글이 없습니다.</p>';
+          return;
+        }
+
+        const commentsMap = new Map();
+        snapshot.forEach(doc => {
+          commentsMap.set(doc.id, { id: doc.id, ...doc.data(), replies: [] });
+        });
+
+        const roots = [];
+        commentsMap.forEach(c => {
+          if (c.parentId) {
+            const parent = commentsMap.get(c.parentId);
+            if (parent) parent.replies.push(c);
+          } else {
+            roots.push(c);
+          }
+        });
+
+        function renderComment(comment, container) {
+          const div = document.createElement('div');
+          div.className = 'comment-item';
+
+          const dateStr = comment.createdAt ? comment.createdAt.toDate().toLocaleString() : '';
+          div.innerHTML = `
+            <div class="comment-header">
+              <span>${escapeHtml(comment.name || '익명')}</span>
+              <span class="comment-date">${dateStr}</span>
+              <button class="reply-button">답글</button>
+            </div>
+            <div class="comment-text">${escapeHtml(comment.text)}</div>
+          `;
+
+          container.appendChild(div);
+
+          const repliesContainer = document.createElement('div');
+          repliesContainer.className = 'replies';
+          div.appendChild(repliesContainer);
+
+          const replyForm = document.createElement('div');
+          replyForm.className = 'reply-form';
+          replyForm.style.display = 'none';
+          replyForm.innerHTML = `
+            <textarea rows="2" placeholder="답글을 입력하세요..."></textarea>
+            <button>등록</button>
+          `;
+          div.appendChild(replyForm);
+
+          const replyBtn = div.querySelector('.reply-button');
+          const replyTextarea = replyForm.querySelector('textarea');
+          const replySubmitBtn = replyForm.querySelector('button');
+
+          replyBtn.addEventListener('click', () => {
+            if (replyForm.style.display === 'none') {
+              replyForm.style.display = 'flex';
+              replyTextarea.focus();
+            } else {
+              replyForm.style.display = 'none';
+            }
+          });
+
+          replySubmitBtn.addEventListener('click', async () => {
+            const text = replyTextarea.value.trim();
+            if (!text) {
+              alert('답글 내용을 입력하세요.');
+              return;
+            }
+            const name = nicknameInput.value.trim() || '익명';
+            try {
+              await db.collection('comments').doc(currentNoticeId).collection('comments').add({
+                text,
+                name,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                parentId: comment.id
+              });
+              replyTextarea.value = '';
+              replyForm.style.display = 'none';
+              loadComments(currentNoticeId);
+            } catch (e) {
+              alert('답글 등록 중 오류가 발생했습니다.');
+              console.error(e);
+            }
+          });
+
+          if (comment.replies.length) {
+            comment.replies.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+            comment.replies.forEach(r => renderComment(r, repliesContainer));
+          }
+        }
+
+        commentsList.innerHTML = '';
+        roots.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+        roots.forEach(c => renderComment(c, commentsList));
+
+        scrollCommentsToBottom();
+
+      } catch (error) {
+        commentsList.innerHTML = '<p>댓글을 불러오는 중 오류가 발생했습니다.</p>';
+        console.error('댓글 로드 오류:', error);
+      }
+    }
+
+    async function submitComment() {
+      const text = commentInput.value.trim();
+      if (!text) {
+        alert('댓글 내용을 입력하세요.');
+        return;
+      }
+      const name = nicknameInput.value.trim() || '익명';
+
+      const commentData = {
+        text,
+        name,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        parentId: null
+      };
+
+      try {
+        await db.collection('comments').doc(currentNoticeId).collection('comments').add(commentData);
+        commentInput.value = '';
+        loadComments(currentNoticeId);
+      } catch (error) {
+        alert('댓글 등록 중 오류가 발생했습니다.');
+        console.error(error);
+      }
+    }
+
+    submitCommentBtn.addEventListener('click', submitComment);
+
+    function loadNotice(filename) {
+      currentNoticeId = filename;
+      fetch(`updates/${filename}`)
+        .then(r => r.text())
+        .then(md => {
+          noticeBody.innerHTML = markdownToHtml(md);
+          listView.style.display = 'none';
+          detailView.style.display = 'flex';
+          loadComments(currentNoticeId);
+        });
+    }
+
+    function goBack() {
+      detailView.style.display = 'none';
+      listView.style.display = 'flex';
+      currentNoticeId = null;
+      commentsList.innerHTML = '';
+      commentInput.value = '';
+      nicknameInput.value = '';
+      renderNoticeList();
+    }
+
+    renderNoticeList();
+
+    const toggleBtn = document.querySelector('.theme-toggle');
+    toggleBtn.addEventListener('click', toggleTheme);
+    (function applySavedTheme() {
+      if(localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+        toggleBtn.textContent = '☀️';
+      }
+    })();
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      toggleBtn.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
   </script>
 </body>
 </html>
