@@ -77,6 +77,7 @@
   }
   #searchInput {
     flex-grow: 1;
+    max-width: 65%;
     padding: 14px 18px;
     border-radius: 14px;
     border: 2px solid #d0d7e9;
@@ -113,6 +114,7 @@
     user-select: none;
     transition: background 0.3s ease;
     flex-shrink: 0;
+    max-width: 35%;
   }
   #writePostBtn:hover {
     background: linear-gradient(135deg, #254eda, #1e3bb3);
@@ -181,14 +183,6 @@
   }
   body.dark .post-meta {
     color: #a0a7c4;
-  }
-  .post-thumb {
-    margin-top: 10px;
-    max-width: 100%;
-    max-height: 130px;
-    border-radius: 14px;
-    object-fit: cover;
-    box-shadow: 0 8px 24px rgba(51,102,255,0.15);
   }
   .modal {
     position: fixed;
@@ -266,19 +260,6 @@
     border-color: #81a8ff;
     box-shadow: 0 0 14px rgba(129,168,255,0.6);
   }
-  .modal-content input[type="file"] {
-    cursor: pointer;
-    margin-bottom: 18px;
-  }
-  #previewImage {
-    width: 100%;
-    border-radius: 20px;
-    margin-top: 4px;
-    margin-bottom: 20px;
-    display: none;
-    box-shadow: 0 12px 32px rgba(51,102,255,0.22);
-    object-fit: contain;
-  }
   .modal-content button#submitPostBtn {
     background: linear-gradient(135deg, #3366ff, #254eda);
     border: none;
@@ -320,15 +301,6 @@
   }
   body.dark .modal-content .closeBtn:hover {
     color: #81a8ff;
-  }
-  #postDetailImg {
-    max-width: 100%;
-    max-height: 280px;
-    margin-bottom: 20px;
-    border-radius: 20px;
-    object-fit: contain;
-    display: none;
-    box-shadow: 0 15px 45px rgba(51,102,255,0.25);
   }
   #postDetailContent {
     white-space: pre-wrap;
@@ -426,24 +398,6 @@
   .comment-item:last-child {
     border-bottom: none;
   }
-  .comment-item strong {
-    color: #3366ff;
-    cursor: pointer;
-  }
-  body.dark .comment-item strong {
-    color: #81a8ff;
-  }
-  .reply-item {
-    margin-left: 20px;
-    padding: 6px 6px;
-    border-left: 2px solid #3366ff;
-    color: #555;
-    font-size: 0.95rem;
-  }
-  body.dark .reply-item {
-    color: #bbb;
-    border-left-color: #81a8ff;
-  }
 </style>
 </head>
 <body>
@@ -465,8 +419,6 @@
     <h2 id="postModalTitle">게시글 작성</h2>
     <input type="text" id="postTitle" placeholder="제목을 입력하세요" aria-label="게시글 제목 입력" />
     <textarea id="postContent" rows="6" placeholder="내용을 입력하세요" aria-label="게시글 내용 입력"></textarea>
-    <input type="file" id="postImage" accept="image/*" aria-label="이미지 첨부" />
-    <img id="previewImage" alt="첨부 이미지 미리보기" />
     <button id="submitPostBtn">작성 완료</button>
   </div>
 </div>
@@ -475,7 +427,6 @@
   <div class="modal-content">
     <button class="closeBtn" title="닫기" aria-label="닫기">&times;</button>
     <h2 id="postDetailTitle"></h2>
-    <img id="postDetailImg" alt="게시글 이미지" />
     <div id="postDetailContent"></div>
     <form id="commentForm" aria-label="댓글 작성 폼">
       <input type="text" id="commentAuthor" placeholder="이름" required aria-required="true" aria-label="댓글 작성자 이름" />
@@ -488,27 +439,41 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDIvo2an7B8jLgYSUtf4l9JUJq5h6bwnjQ",
   authDomain: "dashboard-7f283.firebaseapp.com",
   projectId: "dashboard-7f283",
-  storageBucket: "dashboard-7f283.firebasestorage.app",
+  storageBucket: "dashboard-7f283.appspot.com",
   messagingSenderId: "545232225487",
   appId: "1:545232225487:web:d2f29df0d942df9dbd63ba"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const storage = firebase.storage();
 
-const postsListEl = document.querySelector('#postsList ul');
-const postModal = document.getElementById('postModal');
-const postDetailModal = document.getElementById('postDetailModal');
 const modeToggle = document.getElementById('modeToggle');
 const body = document.body;
+modeToggle.addEventListener('click', () => {
+  body.classList.toggle('dark');
+  modeToggle.textContent = body.classList.contains('dark') ? '🌙' : '☀️';
+});
+
+const postsList = document.querySelector('#postsList ul');
+const writePostBtn = document.getElementById('writePostBtn');
+const postModal = document.getElementById('postModal');
+const postDetailModal = document.getElementById('postDetailModal');
+const postTitleInput = document.getElementById('postTitle');
+const postContentInput = document.getElementById('postContent');
+const submitPostBtn = document.getElementById('submitPostBtn');
+const postDetailTitle = document.getElementById('postDetailTitle');
+const postDetailContent = document.getElementById('postDetailContent');
+const commentForm = document.getElementById('commentForm');
+const commentAuthorInput = document.getElementById('commentAuthor');
+const commentTextInput = document.getElementById('commentText');
+const commentsList = document.getElementById('commentsList');
+const searchInput = document.getElementById('searchInput');
 
 let currentPostId = null;
 
@@ -521,156 +486,125 @@ function closeModal(modal) {
   modal.classList.remove('active');
 }
 
-document.querySelectorAll('.modal .closeBtn').forEach(btn => {
-  btn.addEventListener('click', e => {
-    closeModal(e.target.closest('.modal'));
-  });
-});
-
-modeToggle.addEventListener('click', () => {
-  body.classList.toggle('dark');
-  modeToggle.textContent = body.classList.contains('dark') ? '🌙' : '☀️';
-});
-
-document.getElementById('writePostBtn').addEventListener('click', () => {
+writePostBtn.addEventListener('click', () => {
+  postTitleInput.value = '';
+  postContentInput.value = '';
+  document.getElementById('postModalTitle').textContent = '게시글 작성';
+  submitPostBtn.textContent = '작성 완료';
   openModal(postModal);
-  clearPostModal();
 });
 
-function clearPostModal() {
-  document.getElementById('postTitle').value = '';
-  document.getElementById('postContent').value = '';
-  document.getElementById('postImage').value = '';
-  document.getElementById('previewImage').style.display = 'none';
-  document.getElementById('previewImage').src = '';
-}
-
-document.getElementById('postImage').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = document.getElementById('previewImage');
-      img.src = ev.target.result;
-      img.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  }
+postModal.querySelector('.closeBtn').addEventListener('click', () => {
+  closeModal(postModal);
 });
 
-document.getElementById('submitPostBtn').addEventListener('click', async () => {
-  const title = document.getElementById('postTitle').value.trim();
-  const content = document.getElementById('postContent').value.trim();
-  const fileInput = document.getElementById('postImage');
+postDetailModal.querySelector('.closeBtn').addEventListener('click', () => {
+  closeModal(postDetailModal);
+  clearComments();
+});
+
+submitPostBtn.addEventListener('click', async () => {
+  const title = postTitleInput.value.trim();
+  const content = postContentInput.value.trim();
   if (!title || !content) {
-    alert('제목과 내용을 입력해주세요.');
+    alert('제목과 내용을 모두 입력해주세요.');
     return;
   }
-
-  let imageUrl = '';
-  if (fileInput.files.length > 0) {
-    const file = fileInput.files[0];
-    const storageRef = storage.ref().child('posts/' + Date.now() + '_' + file.name);
-    await storageRef.put(file);
-    imageUrl = await storageRef.getDownloadURL();
+  try {
+    await db.collection('posts').add({
+      title,
+      content,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    closeModal(postModal);
+    loadPosts();
+  } catch (error) {
+    alert('게시글 작성 중 오류가 발생했습니다.');
+    console.error(error);
   }
-
-  await db.collection('posts').add({
-    title,
-    content,
-    imageUrl,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  closeModal(postModal);
-  loadPosts();
 });
 
-async function loadPosts() {
-  postsListEl.innerHTML = '';
-  const snapshot = await db.collection('posts').orderBy('createdAt', 'desc').get();
+async function loadPosts(filter = '') {
+  postsList.innerHTML = '';
+  let query = db.collection('posts').orderBy('createdAt', 'desc');
+  const snapshot = await query.get();
   snapshot.forEach(doc => {
     const post = doc.data();
+    if (filter && !post.title.toLowerCase().includes(filter.toLowerCase())) return;
     const li = document.createElement('li');
     li.tabIndex = 0;
-    li.dataset.id = doc.id;
+    li.className = 'post-item';
     li.innerHTML = `
-      <div class="post-title">${post.title}</div>
-      <div class="post-meta">${post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : ''}</div>
-      ${post.imageUrl ? `<img class="post-thumb" src="${post.imageUrl}" alt="게시글 이미지" />` : ''}
+      <span class="post-title">${post.title}</span>
+      <span class="post-meta">${post.createdAt?.toDate().toLocaleString() || '날짜 없음'}</span>
     `;
-    li.addEventListener('click', () => openPostDetail(doc.id));
+    li.addEventListener('click', () => openPostDetail(doc.id, post));
     li.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
-        openPostDetail(doc.id);
+        e.preventDefault();
+        openPostDetail(doc.id, post);
       }
     });
-    postsListEl.appendChild(li);
+    postsList.appendChild(li);
   });
 }
 
-async function openPostDetail(postId) {
-  currentPostId = postId;
-  const doc = await db.collection('posts').doc(postId).get();
-  if (!doc.exists) return;
-  const post = doc.data();
-
-  document.getElementById('postDetailTitle').textContent = post.title;
-  const postDetailImg = document.getElementById('postDetailImg');
-  if (post.imageUrl) {
-    postDetailImg.src = post.imageUrl;
-    postDetailImg.style.display = 'block';
-  } else {
-    postDetailImg.style.display = 'none';
-  }
-  document.getElementById('postDetailContent').textContent = post.content;
-
-  loadComments(postId);
-
+async function openPostDetail(id, post) {
+  currentPostId = id;
+  postDetailTitle.textContent = post.title;
+  postDetailContent.textContent = post.content;
   openModal(postDetailModal);
+  loadComments(id);
 }
 
-const commentForm = document.getElementById('commentForm');
 commentForm.addEventListener('submit', async e => {
   e.preventDefault();
-  const author = document.getElementById('commentAuthor').value.trim();
-  const text = document.getElementById('commentText').value.trim();
+  const author = commentAuthorInput.value.trim();
+  const text = commentTextInput.value.trim();
   if (!author || !text) {
-    alert('이름과 댓글 내용을 입력해주세요.');
+    alert('이름과 댓글 내용을 모두 입력해주세요.');
     return;
   }
-  await db.collection('posts').doc(currentPostId).collection('comments').add({
-    author,
-    text,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  commentForm.reset();
-  loadComments(currentPostId);
+  try {
+    await db.collection('posts').doc(currentPostId).collection('comments').add({
+      author,
+      text,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    commentAuthorInput.value = '';
+    commentTextInput.value = '';
+    loadComments(currentPostId);
+  } catch (error) {
+    alert('댓글 작성 중 오류가 발생했습니다.');
+    console.error(error);
+  }
 });
 
 async function loadComments(postId) {
-  const commentsList = document.getElementById('commentsList');
   commentsList.innerHTML = '';
   const snapshot = await db.collection('posts').doc(postId).collection('comments').orderBy('createdAt', 'asc').get();
   snapshot.forEach(doc => {
     const comment = doc.data();
     const div = document.createElement('div');
-    div.classList.add('comment-item');
-    div.innerHTML = `<strong>${comment.author}:</strong> ${comment.text}`;
+    div.className = 'comment-item';
+    div.textContent = `${comment.author}: ${comment.text}`;
     commentsList.appendChild(div);
   });
-  commentsList.scrollTop = commentsList.scrollHeight;
 }
 
-document.getElementById('searchInput').addEventListener('input', e => {
-  const query = e.target.value.toLowerCase();
-  Array.from(postsListEl.children).forEach(li => {
-    const title = li.querySelector('.post-title').textContent.toLowerCase();
-    li.style.display = title.includes(query) ? '' : 'none';
-  });
+function clearComments() {
+  commentsList.innerHTML = '';
+  commentAuthorInput.value = '';
+  commentTextInput.value = '';
+}
+
+searchInput.addEventListener('input', () => {
+  loadPosts(searchInput.value.trim());
 });
 
+// 초기 게시글 불러오기
 loadPosts();
+
 </script>
 </body>
 </html>
