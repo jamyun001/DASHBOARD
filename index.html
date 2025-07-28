@@ -18,6 +18,7 @@
     transition: background-color 0.3s, color 0.3s;
     min-height: 100vh;
     position: relative;
+    -webkit-tap-highlight-color: transparent; /* 터치 하이라이트 제거 */
   }
   body.dark {
     background: #121622;
@@ -372,7 +373,7 @@
     }
   }
   #commentsList {
-    max-height: 300px;
+    max-height: 260px; /* 3개 보이게 높이 조절 */
     overflow-y: auto;
     background: #f8fbff;
     border: 2px solid #d5dbed;
@@ -388,15 +389,69 @@
     color: #ccc;
   }
   .comment-item {
-    padding: 10px 6px;
+    padding: 10px 12px;
     border-bottom: 1px solid #d9e0f5;
     outline: none;
+    position: relative;
   }
   body.dark .comment-item {
     border-color: #3a4163;
   }
   .comment-item:last-child {
     border-bottom: none;
+  }
+  .comment-author {
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #3366ff;
+  }
+  body.dark .comment-author {
+    color: #81a8ff;
+  }
+  .comment-text {
+    white-space: pre-wrap;
+  }
+  .reply-btn {
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    background: transparent;
+    border: none;
+    color: #3366ff;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.85rem;
+    transition: color 0.2s ease;
+  }
+  .reply-btn:hover {
+    color: #254eda;
+  }
+  body.dark .reply-btn {
+    color: #81a8ff;
+  }
+  body.dark .reply-btn:hover {
+    color: #a3b2ff;
+  }
+  .reply-item {
+    margin-left: 20px;
+    border-left: 2px solid #3366ff;
+    padding-left: 12px;
+    margin-top: 8px;
+    color: #555;
+  }
+  body.dark .reply-item {
+    color: #aaa;
+    border-left-color: #81a8ff;
+  }
+  .reply-author {
+    font-weight: 700;
+    margin-bottom: 2px;
+    font-size: 0.9rem;
+  }
+  .reply-text {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
   }
 </style>
 </head>
@@ -430,7 +485,7 @@
     <div id="postDetailContent"></div>
     <form id="commentForm" aria-label="댓글 작성 폼">
       <input type="text" id="commentAuthor" placeholder="이름" required aria-required="true" aria-label="댓글 작성자 이름" />
-      <input type="text" id="commentText" placeholder="댓글을 입력하세요" required aria-required="true" aria-label="댓글 내용" />
+      <input type="text" id="commentText" placeholder="댓글을 입력하세요" required aria-required="true" aria-label="댓글 내용 입력" />
       <button type="submit">댓글 작성</button>
     </form>
     <div id="commentsList" aria-live="polite" aria-atomic="true" aria-relevant="additions"></div>
@@ -476,6 +531,7 @@ const commentsList = document.getElementById('commentsList');
 const searchInput = document.getElementById('searchInput');
 
 let currentPostId = null;
+let replyingToCommentId = null;  // 답글 달 댓글 ID 저장용
 
 function openModal(modal) {
   modal.classList.add('active');
@@ -501,6 +557,7 @@ postModal.querySelector('.closeBtn').addEventListener('click', () => {
 postDetailModal.querySelector('.closeBtn').addEventListener('click', () => {
   closeModal(postDetailModal);
   clearComments();
+  replyingToCommentId = null;
 });
 
 submitPostBtn.addEventListener('click', async () => {
@@ -555,6 +612,7 @@ async function openPostDetail(id, post) {
   postDetailContent.textContent = post.content;
   openModal(postDetailModal);
   loadComments(id);
+  replyingToCommentId = null;
 }
 
 commentForm.addEventListener('submit', async e => {
@@ -566,13 +624,26 @@ commentForm.addEventListener('submit', async e => {
     return;
   }
   try {
-    await db.collection('posts').doc(currentPostId).collection('comments').add({
-      author,
-      text,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    if(replyingToCommentId){
+      // 답글 저장
+      await db.collection('posts').doc(currentPostId)
+        .collection('comments').doc(replyingToCommentId)
+        .collection('replies').add({
+          author,
+          text,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } else {
+      // 일반 댓글 저장
+      await db.collection('posts').doc(currentPostId).collection('comments').add({
+        author,
+        text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
     commentAuthorInput.value = '';
     commentTextInput.value = '';
+    replyingToCommentId = null;
     loadComments(currentPostId);
   } catch (error) {
     alert('댓글 작성 중 오류가 발생했습니다.');
@@ -580,15 +651,54 @@ commentForm.addEventListener('submit', async e => {
   }
 });
 
+// 댓글 + 답글 불러오기 함수
 async function loadComments(postId) {
   commentsList.innerHTML = '';
-  const snapshot = await db.collection('posts').doc(postId).collection('comments').orderBy('createdAt', 'asc').get();
-  snapshot.forEach(doc => {
-    const comment = doc.data();
-    const div = document.createElement('div');
-    div.className = 'comment-item';
-    div.textContent = `${comment.author}: ${comment.text}`;
-    commentsList.appendChild(div);
+
+  const commentsSnapshot = await db.collection('posts').doc(postId)
+    .collection('comments').orderBy('createdAt', 'asc').get();
+
+  commentsSnapshot.forEach(async (commentDoc) => {
+    const comment = commentDoc.data();
+
+    const commentDiv = document.createElement('div');
+    commentDiv.className = 'comment-item';
+    commentDiv.tabIndex = 0;
+
+    // 댓글 본문과 작성자
+    commentDiv.innerHTML = `
+      <div class="comment-author">${comment.author}</div>
+      <div class="comment-text">${comment.text}</div>
+      <button class="reply-btn" aria-label="이 댓글에 답글 달기">답글</button>
+      <div class="replies-container"></div>
+    `;
+
+    // 답글 버튼 이벤트
+    const replyBtn = commentDiv.querySelector('.reply-btn');
+    replyBtn.addEventListener('click', () => {
+      replyingToCommentId = commentDoc.id;
+      commentAuthorInput.focus();
+      commentTextInput.focus();
+    });
+
+    // 답글들 불러오기
+    const repliesContainer = commentDiv.querySelector('.replies-container');
+    const repliesSnapshot = await db.collection('posts').doc(postId)
+      .collection('comments').doc(commentDoc.id)
+      .collection('replies').orderBy('createdAt', 'asc').get();
+
+    repliesSnapshot.forEach(replyDoc => {
+      const reply = replyDoc.data();
+      const replyDiv = document.createElement('div');
+      replyDiv.className = 'reply-item';
+      replyDiv.innerHTML = `
+        <div class="reply-author">${reply.author}</div>
+        <div class="reply-text">${reply.text}</div>
+      `;
+      repliesContainer.appendChild(replyDiv);
+    });
+
+    commentsList.appendChild(commentDiv);
   });
 }
 
@@ -596,6 +706,7 @@ function clearComments() {
   commentsList.innerHTML = '';
   commentAuthorInput.value = '';
   commentTextInput.value = '';
+  replyingToCommentId = null;
 }
 
 searchInput.addEventListener('input', () => {
